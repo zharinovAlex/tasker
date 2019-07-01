@@ -2,13 +2,13 @@ package tasker.tasker.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import org.springframework.data.annotation.CreatedDate;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import tasker.tasker.dictionary.TaskStatus;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -26,12 +26,13 @@ public class Task {
     private String description;
 
     @Column(name = "created_at")
-    @CreatedDate
+    @CreationTimestamp
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Instant createdAt;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private LocalDateTime updatedAt;
+    @UpdateTimestamp
+    private Instant updatedAt;
 
     private TaskStatus status = TaskStatus.STATUS_UNASSIGNED;
 

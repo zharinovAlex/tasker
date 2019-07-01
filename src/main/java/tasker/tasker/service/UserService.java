@@ -8,11 +8,10 @@ import tasker.tasker.dto.UserListDTO;
 import tasker.tasker.dto.UserPageDTO;
 import tasker.tasker.entity.Task;
 import tasker.tasker.entity.User;
-import tasker.tasker.exception.UserNotFoundException;
+import tasker.tasker.exception.EntityNotFoundException;
 import tasker.tasker.repository.TaskRepository;
 import tasker.tasker.repository.UserRepository;
 
-import java.util.Date;
 import java.util.List;
 
 @Service
@@ -37,10 +36,10 @@ public class UserService {
         return users.getContent();
     }
 
-    public User findUserById(Long id) {
+    private User findUserById(Long id) {
         return this.userRepository
                 .findById(id)
-                .orElseThrow(() -> new UserNotFoundException(String.format("User with ID %s not found", id)));
+                .orElseThrow(() -> new EntityNotFoundException(String.format("User with ID %s not found", id)));
 
     }
 

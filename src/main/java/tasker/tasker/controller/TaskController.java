@@ -5,42 +5,61 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import tasker.tasker.dto.TaskListDTO;
+import tasker.tasker.dto.TaskPageDTO;
 import tasker.tasker.entity.Task;
-import tasker.tasker.repository.TaskRepository;
+import tasker.tasker.service.TaskService;
 
-import javax.persistence.EntityNotFoundException;
 import javax.validation.Valid;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Transactional
 @RestController
 @RequestMapping(value = "/task", produces = "application/json")
 public class TaskController {
 
-    private final TaskRepository taskRepository;
+    private final TaskService taskService;
 
-    public TaskController(TaskRepository taskRepository) {
-        this.taskRepository = taskRepository;
+    public TaskController(TaskService taskService) {
+        this.taskService = taskService;
     }
 
-    @GetMapping("/all")
+    @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody List<Task> getAllTasks() {
-        return this.taskRepository.findAll();
+    public @ResponseBody
+    List<TaskListDTO> getAllTasks(
+            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(value = "perPage", required = false, defaultValue = "10") int perPage
+    ) {
+        List<Task> tasks = this.taskService.getAllTasks(page, perPage);
+
+        return tasks
+                .stream()
+                .map(this.taskService::convertToListDto)
+                .collect(Collectors.toList());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Task> getTask(@PathVariable(value = "id") Long taskId) throws EntityNotFoundException {
-        Task task = this.taskRepository.
-                findById(taskId)
-                .orElseThrow(() -> new EntityNotFoundException("Task with ID " + taskId + " not found"));
-
-        return ResponseEntity.ok().body(task);
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TaskPageDTO> getTask(@PathVariable Long id) {
+        return ResponseEntity.ok().body(this.taskService.convertToPageDto(id));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void createTask(@Valid @RequestBody Task task) {
-        this.taskRepository.save(task);
+        this.taskService.createTask(task);
+    }
+
+    @PatchMapping(value = "/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateTask(@PathVariable Long id, @Valid @RequestBody Task task) {
+        this.taskService.updateTask(id, task);
+    }
+
+    @DeleteMapping(value = "/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTask(@PathVariable Long id) {
+        this.taskService.deleteTask(id);
     }
 }
