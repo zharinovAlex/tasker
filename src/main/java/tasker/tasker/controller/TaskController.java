@@ -1,12 +1,14 @@
 package tasker.tasker.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import tasker.tasker.dto.TaskListDTO;
-import tasker.tasker.dto.TaskPageDTO;
+import tasker.tasker.dto.task.TaskCreateDto;
+import tasker.tasker.dto.task.TaskListDto;
+import tasker.tasker.dto.task.TaskPageDto;
+import tasker.tasker.dto.task.TaskUpdateDto;
 import tasker.tasker.entity.Task;
 import tasker.tasker.service.TaskService;
 
@@ -14,21 +16,17 @@ import javax.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Transactional
 @RestController
 @RequestMapping(value = "/task", produces = "application/json")
+@RequiredArgsConstructor
 public class TaskController {
 
     private final TaskService taskService;
 
-    public TaskController(TaskService taskService) {
-        this.taskService = taskService;
-    }
-
-    @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    List<TaskListDTO> getAllTasks(
+    List<TaskListDto> getAllTasks(
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "perPage", required = false, defaultValue = "10") int perPage
     ) {
@@ -40,26 +38,26 @@ public class TaskController {
                 .collect(Collectors.toList());
     }
 
-    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<TaskPageDTO> getTask(@PathVariable Long id) {
-        return ResponseEntity.ok().body(this.taskService.convertToPageDto(id));
+    @GetMapping(value = "/{taskId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TaskPageDto> getTask(@PathVariable Long taskId) {
+        return ResponseEntity.ok().body(this.taskService.convertToPageDto(taskId));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void createTask(@Valid @RequestBody Task task) {
-        this.taskService.createTask(task);
+    public void createTask(@Valid @RequestBody TaskCreateDto dto) {
+        this.taskService.createTask(dto);
     }
 
-    @PatchMapping(value = "/{id}")
+    @PatchMapping(value = "/{taskId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateTask(@PathVariable Long id, @Valid @RequestBody Task task) {
-        this.taskService.updateTask(id, task);
+    public void updateTask(@PathVariable Long taskId, @Valid @RequestBody TaskUpdateDto dto) {
+        this.taskService.updateTask(taskId, dto);
     }
 
-    @DeleteMapping(value = "/{id}")
+    @DeleteMapping(value = "/{taskId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteTask(@PathVariable Long id) {
-        this.taskService.deleteTask(id);
+    public void deleteTask(@PathVariable Long taskId) {
+        this.taskService.deleteTask(taskId);
     }
 }

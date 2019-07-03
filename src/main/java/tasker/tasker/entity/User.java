@@ -3,10 +3,11 @@ package tasker.tasker.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import tasker.tasker.dictionary.Role;
-import tasker.tasker.dictionary.Team;
+import tasker.tasker.model.Role;
+import tasker.tasker.model.Team;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
@@ -15,12 +16,12 @@ import java.time.Instant;
 
 @Data
 @Entity
+@NoArgsConstructor
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private long id;
+    private Long id;
 
     @Column(name = "first_name", length = 100)
     @NotNull
@@ -43,10 +44,14 @@ public class User {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Instant updatedAt;
 
-    private boolean active = true;
+    private Boolean active = true;
 
     @JsonIgnore
     private Role role = Role.ROLE_USER;
 
     private Team team;
+
+    public User(@NotNull Long id) {
+        this.id = id;
+    }
 }

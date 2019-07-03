@@ -1,11 +1,16 @@
 package tasker.tasker.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import tasker.tasker.dto.UserListDTO;
-import tasker.tasker.dto.UserPageDTO;
+import org.springframework.transaction.annotation.Transactional;
+import tasker.tasker.dto.task.TaskListDto;
+import tasker.tasker.dto.user.UserCreateDto;
+import tasker.tasker.dto.user.UserListDto;
+import tasker.tasker.dto.user.UserPageDto;
+import tasker.tasker.dto.user.UserUpdateDto;
 import tasker.tasker.entity.Task;
 import tasker.tasker.entity.User;
 import tasker.tasker.exception.EntityNotFoundException;
@@ -14,19 +19,13 @@ import tasker.tasker.repository.UserRepository;
 
 import java.util.List;
 
+@Transactional
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
-    private UserRepository userRepository;
-    private TaskRepository taskRepository;
-
-    public UserService(
-            UserRepository userRepository,
-            TaskRepository taskRepository
-    ) {
-        this.userRepository = userRepository;
-        this.taskRepository = taskRepository;
-    }
+    private final UserRepository userRepository;
+    private final TaskRepository taskRepository;
 
     public List<User> findAllUsers(int page, int perPage) {
         Pageable paged = PageRequest.of(page, perPage);
@@ -43,29 +42,36 @@ public class UserService {
 
     }
 
-    public void createUser(User user) {
-        user.setEmail(user.getEmail().toLowerCase());
+    public void createUser(UserCreateDto dto) {
+        User user = new User();
+
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail().toLowerCase());
+
+        if (null != dto.getTeam()) {
+            user.setTeam(dto.getTeam());
+        }
 
         this.userRepository.save(user);
     }
 
-    public Page<Task> getTasksForUser(Long userId, int page, int perPage) {
-        User user = new User();
-        user.setId(userId);
+    public List<Task> getTasksForUser(Long userId, int page, int perPage) {
+        User user = new User(userId);
 
         Pageable paged = PageRequest.of(page, perPage);
 
         return this.taskRepository.findByUser(user, paged);
     }
 
-    public void updateUser(Long userId, User updatedUser) {
+    public void updateUser(Long userId, UserUpdateDto dto) {
         User user = this.findUserById(userId);
 
-        user.setFirstName(updatedUser.getFirstName());
-        user.setLastName(updatedUser.getLastName());
-        user.setEmail(updatedUser.getEmail());
-        user.setTeam(updatedUser.getTeam());
-        user.setActive(updatedUser.isActive());
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail());
+        user.setTeam(dto.getTeam());
+        user.setActive(dto.getActive());
 
         this.userRepository.save(user);
     }
@@ -76,8 +82,8 @@ public class UserService {
         this.userRepository.delete(user);
     }
 
-    public UserListDTO convertToListDto(User user) {
-        UserListDTO dto = new UserListDTO();
+    public UserListDto convertToListDto(User user) {
+        UserListDto dto = new UserListDto();
 
         dto.setId(user.getId());
         dto.setFirstName(user.getFirstName());
@@ -86,18 +92,34 @@ public class UserService {
         return dto;
     }
 
-    public UserPageDTO convertToPageDto(Long id) {
+    public UserPageDto convertToPageDto(Long id) {
         User user = this.findUserById(id);
-        UserPageDTO dto = new UserPageDTO();
+        UserPageDto dto = new UserPageDto();
 
         dto.setId(user.getId());
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
         dto.setEmail(user.getEmail());
         dto.setUpdatedAt(user.getUpdatedAt());
-        dto.setActive(user.isActive());
+        dto.setActive(user.getActive());
         dto.setTeam(user.getTeam());
 
         return dto;
+    }
+
+    public TaskListDto convertToTaskListDto(Task task) {
+        return TaskListDto.builder()
+                .id(task.getId())
+                .name(task.getName())
+                .description(task.getDescription())
+                .status(task.getStatus())
+                .user(
+                        UserListDto.builder()
+                                .id(task.getUser().getId())
+                                .firstName(task.getUser().getFirstName())
+                                .lastName(task.getUser().getLastName())
+                                .build()
+                )
+                .build();
     }
 }

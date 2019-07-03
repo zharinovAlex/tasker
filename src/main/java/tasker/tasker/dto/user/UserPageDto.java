@@ -1,19 +1,18 @@
-package tasker.tasker.dto;
+package tasker.tasker.dto.user;
 
 import lombok.Data;
-import tasker.tasker.dictionary.Team;
+import tasker.tasker.model.Team;
 
 import java.time.Instant;
 
 @Data
-public class UserPageDTO {
+public class UserPageDto {
 
-    private long id;
+    private Long id;
     private String firstName;
     private String lastName;
     private String email;
     private Instant updatedAt;
-    private boolean active;
+    private Boolean active;
     private Team team;
-
 }

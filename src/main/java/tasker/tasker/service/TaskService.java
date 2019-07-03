@@ -1,27 +1,29 @@
 package tasker.tasker.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import tasker.tasker.dto.TaskListDTO;
-import tasker.tasker.dto.TaskPageDTO;
+import org.springframework.transaction.annotation.Transactional;
+import tasker.tasker.dto.task.TaskCreateDto;
+import tasker.tasker.dto.task.TaskListDto;
+import tasker.tasker.dto.task.TaskPageDto;
+import tasker.tasker.dto.task.TaskUpdateDto;
+import tasker.tasker.dto.user.UserListDto;
 import tasker.tasker.entity.Task;
+import tasker.tasker.entity.User;
 import tasker.tasker.exception.EntityNotFoundException;
 import tasker.tasker.repository.TaskRepository;
 
 import java.util.List;
 
+@Transactional
 @Service
+@RequiredArgsConstructor
 public class TaskService {
 
-    private TaskRepository taskRepository;
-
-    @Autowired
-    public TaskService(TaskRepository taskRepository) {
-        this.taskRepository = taskRepository;
-    }
+    private final TaskRepository taskRepository;
 
     private Task findTaskById(Long id) {
         return this.taskRepository
@@ -37,46 +39,70 @@ public class TaskService {
         return tasks.getContent();
     }
 
-    public TaskListDTO convertToListDto(Task task) {
-        TaskListDTO dto = new TaskListDTO();
+    public TaskListDto convertToListDto(Task task) {
+        TaskListDto dto = new TaskListDto();
+        UserListDto userDto = new UserListDto();
+        User user = task.getUser();
+
+        userDto.setId(user.getId());
+        userDto.setFirstName(user.getFirstName());
+        userDto.setLastName(user.getLastName());
 
         dto.setId(task.getId());
         dto.setName(task.getName());
         dto.setDescription(task.getDescription());
         dto.setStatus(task.getStatus());
-        dto.setUser(task.getUser());
+        dto.setUser(userDto);
 
         return dto;
     }
 
-    public TaskPageDTO convertToPageDto(Long id) {
+    public TaskPageDto convertToPageDto(Long id) {
         Task task = this.findTaskById(id);
-        TaskPageDTO dto = new TaskPageDTO();
+        TaskPageDto dto = new TaskPageDto();
 
-        dto
-                .setId(task.getId())
-                .setName(task.getName());
+        dto.setId(task.getId());
+        dto.setName(task.getName());
         dto.setDescription(task.getDescription());
         dto.setCreatedAt(task.getCreatedAt());
-        dto.setCreatedBy(task.getCreatedBy());
+        dto.setCreatedBy(
+                UserListDto.builder()
+                        .id(task.getCreatedBy().getId())
+                        .firstName(task.getCreatedBy().getFirstName())
+                        .lastName(task.getCreatedBy().getLastName())
+                        .build()
+        );
         dto.setUpdatedAt(task.getUpdatedAt());
         dto.setStatus(task.getStatus());
-        dto.setUser(task.getUser());
+        dto.setUser(
+                UserListDto.builder()
+                        .id(task.getUser().getId())
+                        .firstName(task.getUser().getFirstName())
+                        .lastName(task.getUser().getLastName())
+                        .build()
+        );
 
         return dto;
     }
 
-    public void createTask(Task task) {
+    public void createTask(TaskCreateDto dto) {
+        Task task = new Task();
+
+        task.setName(dto.getName());
+        task.setDescription(dto.getDescription());
+        task.setCreatedBy(dto.getCreatedBy());
+        task.setUser(dto.getUser());
+
         this.taskRepository.save(task);
     }
 
-    public void updateTask(Long id, Task updatedTask) {
+    public void updateTask(Long id, TaskUpdateDto dto) {
         Task task = this.findTaskById(id);
 
-        task.setName(updatedTask.getName());
-        task.setDescription(updatedTask.getDescription());
-        task.setStatus(updatedTask.getStatus());
-        task.setUser(updatedTask.getUser());
+        task.setName(dto.getName());
+        task.setDescription(dto.getDescription());
+        task.setStatus(dto.getStatus());
+        task.setUser(dto.getUser());
 
         this.taskRepository.save(task);
     }
