@@ -1,6 +1,8 @@
 package tasker.tasker.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +17,6 @@ import tasker.tasker.entity.User;
 import tasker.tasker.service.UserService;
 
 import javax.validation.Valid;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
@@ -24,58 +25,119 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserController {
 
+    private static final String USER_ID = "userId";
+
     private final UserService userService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    List<UserListDto> getUsersList(
+    Page<UserListDto> getUsersList(
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "perPage", required = false, defaultValue = "10") int perPage
     ) {
-        List<User> users = this.userService.findAllUsers(page, perPage);
-
-        return users
-                .stream()
-                .map(this.userService::convertToListDto)
-                .collect(Collectors.toList());
+        return new PageImpl<>(
+                this.userService.findAllUsers(page, perPage)
+                        .stream()
+                        .map(this::convertToListDto)
+                        .collect(Collectors.toList())
+        );
     }
 
-    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserPageDto> getUser(@PathVariable Long id) {
-        return ResponseEntity.ok().body(this.userService.convertToPageDto(id));
+    @GetMapping(value = "/{" + USER_ID + "}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UserPageDto> getUser(@PathVariable Long userId) {
+        return ResponseEntity.ok().body(this.convertToPageDto(userId));
     }
 
-    @GetMapping(value = "/{userId}/tasks", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/{" + USER_ID + "}/tasks", produces = MediaType.APPLICATION_JSON_VALUE)
     public @ResponseBody
-    List<TaskListDto> getTasksForUser(
+    Page<TaskListDto> getTasksForUser(
             @PathVariable Long userId,
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "perPage", required = false, defaultValue = "10") int perPage
     ) {
-        List<Task> tasks = this.userService.getTasksForUser(userId, page, perPage);
-
-        return tasks
-                .stream()
-                .map(this.userService::convertToTaskListDto)
-                .collect(Collectors.toList());
+        return new PageImpl<>(
+                this.userService.getTasksForUser(userId, page, perPage)
+                        .stream()
+                        .map(this::convertToTaskListDto)
+                        .collect(Collectors.toList())
+        );
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void createUser(@Valid @RequestBody UserCreateDto dto) {
-        this.userService.createUser(dto);
+        User user = new User();
+
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail().toLowerCase());
+
+        if (null != dto.getTeam()) {
+            user.setTeam(dto.getTeam());
+        }
+
+        this.userService.saveUser(user);
     }
 
-    @PatchMapping(value = "/{userId}")
+    @PatchMapping(value = "/{" + USER_ID + "}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateUser(@PathVariable Long userId, @Valid @RequestBody UserUpdateDto dto) {
-        this.userService.updateUser(userId, dto);
+        User user = this.userService.findUserById(userId);
+
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail());
+        user.setTeam(dto.getTeam());
+        user.setActive(dto.getActive());
+
+        this.userService.saveUser(user);
     }
 
-    @DeleteMapping(value = "/{userId}")
+    @DeleteMapping(value = "/{" + USER_ID + "}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable Long userId) {
         this.userService.deleteUser(userId);
+    }
+
+    private UserListDto convertToListDto(User user) {
+        UserListDto dto = new UserListDto();
+
+        dto.setId(user.getId());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+
+        return dto;
+    }
+
+    private TaskListDto convertToTaskListDto(Task task) {
+        return TaskListDto.builder()
+                .id(task.getId())
+                .name(task.getName())
+                .description(task.getDescription())
+                .status(task.getStatus())
+                .user(
+                        UserListDto.builder()
+                                .id(task.getUser().getId())
+                                .firstName(task.getUser().getFirstName())
+                                .lastName(task.getUser().getLastName())
+                                .build()
+                )
+                .build();
+    }
+
+    private UserPageDto convertToPageDto(Long id) {
+        User user = this.userService.findUserById(id);
+        UserPageDto dto = new UserPageDto();
+
+        dto.setId(user.getId());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setEmail(user.getEmail());
+        dto.setUpdatedAt(user.getUpdatedAt());
+        dto.setActive(user.getActive());
+        dto.setTeam(user.getTeam());
+
+        return dto;
     }
 }
