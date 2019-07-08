@@ -1,23 +1,25 @@
 package tasker.tasker.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import tasker.tasker.dictionary.TaskStatus;
+import tasker.tasker.model.TaskStatus;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.Instant;
 
+@Builder
 @Data
 @Entity
+@NoArgsConstructor // for hibernate
+@AllArgsConstructor // for @builder
 public class Task {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private long id;
+    private Long id;
 
     @NotNull
     private String name;
@@ -36,9 +38,7 @@ public class Task {
 
     private TaskStatus status = TaskStatus.STATUS_UNASSIGNED;
 
-    @NotNull
     @ManyToOne(targetEntity = User.class)
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private User createdBy;
 
     @ManyToOne(targetEntity = User.class)

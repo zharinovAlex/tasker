@@ -1,4 +1,4 @@
-package tasker.tasker.dictionary;
+package tasker.tasker.model;
 
 public enum Team {
     TEAM_JUNIOR,
