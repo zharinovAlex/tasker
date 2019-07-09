@@ -17,6 +17,7 @@ import java.time.Instant;
 @Data
 @Entity
 @NoArgsConstructor
+@Table(name = "user")
 public class User {
 
     @Id
