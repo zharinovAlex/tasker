@@ -3,6 +3,7 @@ package tasker.tasker.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserController {
 
-    private static final String ID = "/{userId}";
+    private static final String USER_ID = "/{userId}";
 
     private final UserService userService;
     private final OricaMapperManager mapperManager;
@@ -33,34 +34,27 @@ public class UserController {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Page<UserListDto> getUsersList(/*Pageable paged,*/
-            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(value = "perPage", required = false, defaultValue = "10") int perPage
-    ) {
+    Page<UserListDto> getUsersList(Pageable pageable) {
         return new PageImpl<>(
-                this.userService.findAllUsers(page, perPage)
+                this.userService.findAllUsers(pageable)
                         .stream()
                         .map(user -> this.mapperManager.map(user, UserListDto.class))
                         .collect(Collectors.toList())
         );
     }
 
-    @GetMapping(value = ID, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = USER_ID, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserPageDto> getUser(@PathVariable Long userId) {
         return ResponseEntity.ok().body(
                 this.mapperManager.map(this.userService.findUserById(userId), UserPageDto.class)
         );
     }
 
-    @GetMapping(value = ID + "/tasks", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = USER_ID + "/tasks", produces = MediaType.APPLICATION_JSON_VALUE)
     public @ResponseBody
-    Page<TaskListDto> getTasksForUser(
-            @PathVariable Long userId,
-            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(value = "perPage", required = false, defaultValue = "10") int perPage
-    ) {
+    Page<TaskListDto> getTasksForUser(@PathVariable Long userId, Pageable pageable) {
         return new PageImpl<>(
-                this.userService.getTasksForUser(userId, page, perPage)
+                this.userService.getTasksForUser(userId, pageable)
                         .stream()
                         .map(task -> this.mapperManager.map(task, TaskListDto.class))
                         .collect(Collectors.toList())
@@ -73,13 +67,13 @@ public class UserController {
         this.userService.saveUser(this.mapperManager.map(dto, User.class));
     }
 
-    @PatchMapping(value = ID)
+    @PatchMapping(value = USER_ID)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateUser(@PathVariable Long userId, @Valid @RequestBody UserUpdateDto dto) {
         this.userService.saveUser(this.mapperManager.map(dto, this.userService.findUserById(userId)));
     }
 
-    @DeleteMapping(value = ID)
+    @DeleteMapping(value = USER_ID)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable Long userId) {
         this.userService.deleteUser(userId);

@@ -3,6 +3,7 @@ package tasker.tasker.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,12 +32,9 @@ public class TaskController {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Page<TaskListDto> getAllTasks(
-            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(value = "perPage", required = false, defaultValue = "10") int perPage
-    ) {
+    Page<TaskListDto> getAllTasks(Pageable pageable) {
         return new PageImpl<>(
-                this.taskService.getAllTasks(page, perPage)
+                this.taskService.getAllTasks(pageable)
                         .stream()
                         .map(task -> this.mapperManager.map(task, TaskListDto.class))
                         .collect(Collectors.toList())
