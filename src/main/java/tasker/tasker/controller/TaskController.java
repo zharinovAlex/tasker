@@ -14,7 +14,7 @@ import tasker.tasker.dto.task.TaskPageDto;
 import tasker.tasker.dto.task.TaskUpdateDto;
 import tasker.tasker.entity.Task;
 import tasker.tasker.mapper.OricaMapperManager;
-import tasker.tasker.service.TaskService;
+import tasker.tasker.service.ApplicationService;
 
 import javax.validation.Valid;
 import java.util.stream.Collectors;
@@ -26,7 +26,7 @@ public class TaskController {
 
     private static final String TASK_ID = "/{taskId}";
 
-    private final TaskService taskService;
+    private final ApplicationService applicationService;
     private final OricaMapperManager mapperManager;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -34,7 +34,7 @@ public class TaskController {
     public @ResponseBody
     Page<TaskListDto> getAllTasks(Pageable pageable) {
         return new PageImpl<>(
-                this.taskService.getAllTasks(pageable)
+                this.applicationService.getTasks(pageable)
                         .stream()
                         .map(task -> this.mapperManager.map(task, TaskListDto.class))
                         .collect(Collectors.toList())
@@ -43,24 +43,26 @@ public class TaskController {
 
     @GetMapping(value = TASK_ID, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TaskPageDto> getTask(@PathVariable Long taskId) {
-        return ResponseEntity.ok().body(this.mapperManager.map(this.taskService.findTaskById(taskId), TaskPageDto.class));
+        return ResponseEntity.ok().body(this.mapperManager.map(this.applicationService.getTask(taskId), TaskPageDto.class));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void createTask(@Valid @RequestBody TaskCreateDto dto) {
-        this.taskService.saveTask(this.mapperManager.map(dto, Task.class));
+        this.applicationService.createTask(this.mapperManager.map(dto, Task.class));
     }
 
     @PatchMapping(value = TASK_ID)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateTask(@PathVariable Long taskId, @Valid @RequestBody TaskUpdateDto dto) {
-        this.taskService.saveTask(this.mapperManager.map(dto, this.taskService.findTaskById(taskId)));
+        Task originalTask = this.applicationService.getTask(taskId);
+
+        this.applicationService.updateTask(originalTask.getStatus(), this.mapperManager.map(dto, originalTask));
     }
 
     @DeleteMapping(value = TASK_ID)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteTask(@PathVariable Long taskId) {
-        this.taskService.deleteTask(taskId);
+        this.applicationService.deleteTask(taskId);
     }
 }

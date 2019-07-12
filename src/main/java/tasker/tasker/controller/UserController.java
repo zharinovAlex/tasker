@@ -15,28 +15,27 @@ import tasker.tasker.dto.user.UserPageDto;
 import tasker.tasker.dto.user.UserUpdateDto;
 import tasker.tasker.entity.User;
 import tasker.tasker.mapper.OricaMapperManager;
-import tasker.tasker.service.UserService;
+import tasker.tasker.service.ApplicationService;
 
 import javax.validation.Valid;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(value = "/user", produces = "application/json")
-@ControllerAdvice
 @RequiredArgsConstructor
 public class UserController {
 
     private static final String USER_ID = "/{userId}";
 
-    private final UserService userService;
     private final OricaMapperManager mapperManager;
+    private final ApplicationService applicationService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Page<UserListDto> getUsersList(Pageable pageable) {
         return new PageImpl<>(
-                this.userService.findAllUsers(pageable)
+                this.applicationService.getUsers(pageable)
                         .stream()
                         .map(user -> this.mapperManager.map(user, UserListDto.class))
                         .collect(Collectors.toList())
@@ -46,7 +45,7 @@ public class UserController {
     @GetMapping(value = USER_ID, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserPageDto> getUser(@PathVariable Long userId) {
         return ResponseEntity.ok().body(
-                this.mapperManager.map(this.userService.findUserById(userId), UserPageDto.class)
+                this.mapperManager.map(this.applicationService.getUser(userId), UserPageDto.class)
         );
     }
 
@@ -54,7 +53,7 @@ public class UserController {
     public @ResponseBody
     Page<TaskListDto> getTasksForUser(@PathVariable Long userId, Pageable pageable) {
         return new PageImpl<>(
-                this.userService.getTasksForUser(userId, pageable)
+                this.applicationService.getUsersTasks(userId, pageable)
                         .stream()
                         .map(task -> this.mapperManager.map(task, TaskListDto.class))
                         .collect(Collectors.toList())
@@ -64,18 +63,18 @@ public class UserController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void createUser(@Valid @RequestBody UserCreateDto dto) {
-        this.userService.saveUser(this.mapperManager.map(dto, User.class));
+        this.applicationService.saveUser(this.mapperManager.map(dto, User.class));
     }
 
     @PatchMapping(value = USER_ID)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateUser(@PathVariable Long userId, @Valid @RequestBody UserUpdateDto dto) {
-        this.userService.saveUser(this.mapperManager.map(dto, this.userService.findUserById(userId)));
+        this.applicationService.saveUser(this.mapperManager.map(dto, this.applicationService.getUser(userId)));
     }
 
     @DeleteMapping(value = USER_ID)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable Long userId) {
-        this.userService.deleteUser(userId);
+        this.applicationService.deleteUser(userId);
     }
 }
