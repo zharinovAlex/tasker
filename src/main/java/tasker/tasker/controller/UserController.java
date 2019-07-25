@@ -67,7 +67,7 @@ public class UserController {
     }
 
     @PatchMapping(value = USER_ID)
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.OK)
     public void updateUser(@PathVariable Long userId, @Valid @RequestBody UserUpdateDto dto) {
         this.applicationService.saveUser(this.mapperManager.map(dto, this.applicationService.getUser(userId)));
     }

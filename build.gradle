@@ -37,4 +37,7 @@ dependencies {
     compile group: 'ma.glasnost.orika', name: 'orika-core', version: '1.5.4'
     compile 'org.liquibase:liquibase-core'
     compile 'ma.glasnost.orika:orika-core:1.5.4'
+    testCompile 'org.mockito:mockito-core:3.0.0'
+    testCompile 'org.junit.jupiter:junit-jupiter-engine:5.5.1'
+    compile 'org.springframework.boot:spring-boot-starter-parent:2.1.6.RELEASE'
 }

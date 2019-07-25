@@ -53,7 +53,7 @@ public class TaskController {
     }
 
     @PatchMapping(value = TASK_ID)
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.OK)
     public void updateTask(@PathVariable Long taskId, @Valid @RequestBody TaskUpdateDto dto) {
         Task originalTask = this.applicationService.getTask(taskId);
 
