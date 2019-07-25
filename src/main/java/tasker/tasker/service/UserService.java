@@ -1,8 +1,6 @@
 package tasker.tasker.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +20,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final TaskRepository taskRepository;
 
-    public List<User> findAllUsers(int page, int perPage) {
-        Pageable paged = PageRequest.of(page, perPage);
-
-        Page<User> users = this.userRepository.findAll(paged);
-
-        return users.getContent();
+    public List<User> findAllUsers(Pageable pageable) {
+        return this.userRepository.findAll(pageable).getContent();
     }
 
     public User findUserById(Long id) {
@@ -37,18 +31,12 @@ public class UserService {
 
     }
 
-    public List<Task> getTasksForUser(Long userId, int page, int perPage) {
-        User user = new User(userId);
-
-        Pageable paged = PageRequest.of(page, perPage);
-
-        return this.taskRepository.findByUser(user, paged);
+    public List<Task> getTasksForUser(Long userId, Pageable pageable) {
+        return this.taskRepository.findByUser(this.findUserById(userId), pageable);
     }
 
     public void deleteUser(Long userId) {
-        User user = this.findUserById(userId);
-
-        this.userRepository.delete(user);
+        this.userRepository.delete(this.findUserById(userId));
     }
 
     public void saveUser(User user) {

@@ -3,6 +3,7 @@ package tasker.tasker.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -11,10 +12,9 @@ import tasker.tasker.dto.task.TaskCreateDto;
 import tasker.tasker.dto.task.TaskListDto;
 import tasker.tasker.dto.task.TaskPageDto;
 import tasker.tasker.dto.task.TaskUpdateDto;
-import tasker.tasker.dto.user.UserListDto;
 import tasker.tasker.entity.Task;
-import tasker.tasker.entity.User;
-import tasker.tasker.service.TaskService;
+import tasker.tasker.mapper.OricaMapperManager;
+import tasker.tasker.service.ApplicationService;
 
 import javax.validation.Valid;
 import java.util.stream.Collectors;
@@ -24,105 +24,45 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TaskController {
 
-    private static final String TASK_ID = "taskId";
+    private static final String TASK_ID = "/{taskId}";
 
-    private final TaskService taskService;
+    private final ApplicationService applicationService;
+    private final OricaMapperManager mapperManager;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Page<TaskListDto> getAllTasks(
-            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(value = "perPage", required = false, defaultValue = "10") int perPage
-    ) {
+    Page<TaskListDto> getAllTasks(Pageable pageable) {
         return new PageImpl<>(
-                this.taskService.getAllTasks(page, perPage)
+                this.applicationService.getTasks(pageable)
                         .stream()
-                        .map(this::convertToListDto)
+                        .map(task -> this.mapperManager.map(task, TaskListDto.class))
                         .collect(Collectors.toList())
         );
     }
 
-    @GetMapping(value = "/{" + TASK_ID + "}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = TASK_ID, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TaskPageDto> getTask(@PathVariable Long taskId) {
-        return ResponseEntity.ok().body(this.convertToPageDto(taskId));
+        return ResponseEntity.ok().body(this.mapperManager.map(this.applicationService.getTask(taskId), TaskPageDto.class));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void createTask(@Valid @RequestBody TaskCreateDto dto) {
-        Task task = new Task();
-
-        task.setName(dto.getName());
-        task.setDescription(dto.getDescription());
-        task.setCreatedBy(dto.getCreatedBy());
-        task.setUser(dto.getUser());
-
-        this.taskService.saveTask(task);
+        this.applicationService.createTask(this.mapperManager.map(dto, Task.class));
     }
 
-    @PatchMapping(value = "/{" + TASK_ID + "}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PatchMapping(value = TASK_ID)
+    @ResponseStatus(HttpStatus.OK)
     public void updateTask(@PathVariable Long taskId, @Valid @RequestBody TaskUpdateDto dto) {
-        Task task = this.taskService.findTaskById(taskId);
+        Task originalTask = this.applicationService.getTask(taskId);
 
-        task.setName(dto.getName());
-        task.setDescription(dto.getDescription());
-        task.setStatus(dto.getStatus());
-        task.setUser(dto.getUser());
-
-        this.taskService.saveTask(task);
+        this.applicationService.updateTask(originalTask.getStatus(), this.mapperManager.map(dto, originalTask));
     }
 
-    @DeleteMapping(value = "/{" + TASK_ID + "}")
+    @DeleteMapping(value = TASK_ID)
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteTask(@PathVariable Long taskId) {
-        this.taskService.deleteTask(taskId);
-    }
-
-    private TaskListDto convertToListDto(Task task) {
-        TaskListDto dto = new TaskListDto();
-        UserListDto userDto = new UserListDto();
-        User user = task.getUser();
-
-        userDto.setId(user.getId());
-        userDto.setFirstName(user.getFirstName());
-        userDto.setLastName(user.getLastName());
-
-        dto.setId(task.getId());
-        dto.setName(task.getName());
-        dto.setDescription(task.getDescription());
-        dto.setStatus(task.getStatus());
-        dto.setUser(userDto);
-
-        return dto;
-    }
-
-    private TaskPageDto convertToPageDto(Long id) {
-        Task task = this.taskService.findTaskById(id);
-        TaskPageDto dto = new TaskPageDto();
-
-        dto.setId(task.getId());
-        dto.setName(task.getName());
-        dto.setDescription(task.getDescription());
-        dto.setCreatedAt(task.getCreatedAt());
-        dto.setCreatedBy(
-                UserListDto.builder()
-                        .id(task.getCreatedBy().getId())
-                        .firstName(task.getCreatedBy().getFirstName())
-                        .lastName(task.getCreatedBy().getLastName())
-                        .build()
-        );
-        dto.setUpdatedAt(task.getUpdatedAt());
-        dto.setStatus(task.getStatus());
-        dto.setUser(
-                UserListDto.builder()
-                        .id(task.getUser().getId())
-                        .firstName(task.getUser().getFirstName())
-                        .lastName(task.getUser().getLastName())
-                        .build()
-        );
-
-        return dto;
+        this.applicationService.deleteTask(taskId);
     }
 }
