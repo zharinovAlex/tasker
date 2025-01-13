@@ -1,8 +1,6 @@
 package tasker.tasker.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,18 +23,12 @@ public class TaskService {
                 .orElseThrow(() -> new EntityNotFoundException(String.format("Task with ID %s not found", id)));
     }
 
-    public List<Task> getAllTasks(int page, int perPage) {
-        Pageable paged = PageRequest.of(page, perPage);
-
-        Page<Task> tasks = this.taskRepository.findAll(paged);
-
-        return tasks.getContent();
+    public List<Task> getAllTasks(Pageable pageable) {
+        return this.taskRepository.findAll(pageable).getContent();
     }
 
     public void deleteTask(Long id) {
-        Task task = this.findTaskById(id);
-
-        this.taskRepository.delete(task);
+        this.taskRepository.delete(this.findTaskById(id));
     }
 
     public void saveTask(Task task) {
